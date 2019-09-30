@@ -1,0 +1,56 @@
+---
+ - hosts: node
+   remote_user: ansible
+   tasks:
+     - name: Install yum packages using a list
+       yum:
+        name:
+          - wget
+          - unzip
+          - python36
+          - java
+        state: present
+     - name: exports
+       command: "{{item}}"
+       with_items:
+        - curl -O https://bootstrap.pypa.io/get-pip.py
+        - python3 get-pip.py --user
+     - name: env
+       shell: export PATH=~/.local/bin:$PATH
+     - name: source
+       shell: source ~/.bash_profile
+     - name: install boto3
+       pip:
+         name: boto3
+         executable: pip3
+     - name: install awscli
+       command: pip3 install awscli --upgrade --user
+           async: 45
+           poll: 0
+     - name: create ec2 instance
+       ec2:
+         aws_access_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+         aws_secret_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+         key_name: AWS
+         image: ami-03587fa4048e9eb92
+         wait: yes
+         instance_type: t2.micro
+         group_id: sg-0927ff58
+         region: us-east-1
+         count_tag:
+          Name: sampleserver
+         exact_count: 1
+       register: ec2
+     - name: copy logs file
+        copy:
+          src: /<logsfilepath>
+          dest:  /var/log/<appName>/out.log
+          owner: foo
+          group: foo
+          mode: '0644'
+        - name: replace line in code that represent the conf file path
+          lineinfile: 
+            dest: <code that mention cnf file path> 
+            regexp: '^(.*)/etc/<appName>/config/<propertiesFile>(.*)$' 
+            line: '/etc/<appName>/config/<propertiesFile>;'
+            backrefs: yes
